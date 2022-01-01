@@ -1,12 +1,14 @@
 function randomChar() {
 	const chars =
-		'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン<>#$#%&|()=≈^*;ABCDEFGHIJKLMOPQRSTUVXYZ0123456789';
+		'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン<>#$#%&|()=≈^*±+?π†;_-±ABCDEFGHIJKLMOPQRSTUVXYZ0123456789';
 	return chars[Math.floor(Math.random() * chars.length)];
 }
 
 const canvas = document.querySelector('canvas');
-const rows = 64;
+const rows = 32;
 const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const dpr = 1;
 
 let size,
 	cellSize,
@@ -16,20 +18,24 @@ let size,
 updateSize();
 
 const cols = Math.floor(size.width / (size.height / rows)) + 1;
-const currentRow = [];
-while (currentRow.length < cols) {
-	currentRow.push(Math.floor(Math.random() * rows));
+const currentPositions = [];
+
+while (currentPositions.length < cols) {
+	const pos = [];
+	while (pos.length < 2) pos.push(Math.floor(Math.random() * rows));
+	currentPositions.push(pos);
 }
+
 const textRGB = [128, 255, 0];
 const bgRGB = textRGB.map(c => Math.floor(c * 0.1) || 0);
 const refreshRate = 20;
-const fontFamily = 'Arial';
+const fontFamily = 'Courier New, monospace';
 
 function updateSize() {
 	const rect = canvas.getBoundingClientRect();
 	size = {
-		width: rect.width,
-		height: rect.height,
+		width: rect.width * dpr,
+		height: rect.height * dpr,
 	};
 	canvas.width = size.width;
 	canvas.height = size.height;
@@ -41,10 +47,10 @@ function animate() {
 	try {
 		if (!isAnimating) return;
 
-		ctx.fillStyle = `rgba(${bgRGB.join(',')},0.2)`;
+		ctx.fillStyle = `rgba(${bgRGB.join(',')},0.25)`;
 		ctx.fillRect(0, 0, size.width, size.height);
 
-		ctx.fillStyle = `rgba(${textRGB.join(',')}, 0.8)`;
+		ctx.fillStyle = `rgba(${textRGB.join(',')}, 0.75)`;
 		ctx.font = `bold ${fontSize || 16}px ${fontFamily}`;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
@@ -55,18 +61,17 @@ function animate() {
 		};
 
 		for (let col = 0; col < cols; col++) {
-			const row = currentRow[col];
+			const pos = currentPositions[col];
 
-			currentRow[col] += Math.round(Math.random() * 2);
-			if (currentRow[col] >= rows) {
-				currentRow[col] = 0;
-			}
-
-			ctx.fillText(
-				randomChar(),
-				start.x + col * cellSize + cellSize * 0.5,
-				start.y + row * cellSize + cellSize * 0.5
-			);
+			pos.forEach((row, i) => {
+				ctx.fillText(
+					randomChar(),
+					start.x + col * cellSize + cellSize * 0.5,
+					start.y + row * cellSize + cellSize * 0.5
+				);
+				pos[i] = row + Math.round(Math.random() * 2);
+				if (pos[i] >= rows) pos[i] = 0;
+			});
 		}
 	} catch (e) {
 		console.error(e);
