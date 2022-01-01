@@ -1,0 +1,34 @@
+:root {
+	--main-font: Arial, Helvetica, sans-serif;
+	--body-background: rgb(35, 35, 35);
+}
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+html body {
+	overflow-x: hidden;
+}
+body {
+	height: 100vh;
+	width: 100vw;
+	font-family: var(--main-font);
+	background-color: var(--body-background);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+main {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+canvas {
+	width: 100%;
+	height: 100%;
+}
