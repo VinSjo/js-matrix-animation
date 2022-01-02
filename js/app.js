@@ -4,73 +4,103 @@ function randomChar() {
 	return chars[Math.floor(Math.random() * chars.length)];
 }
 
-const canvas = document.querySelector('canvas');
-const rows = 32;
-const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
-const dpr = 1;
-
-let size,
-	cellSize,
-	fontSize,
-	isAnimating = true;
-
-updateSize();
-
-const cols = Math.floor(size.width / (size.height / rows)) + 1;
-const currentPositions = [];
-
-while (currentPositions.length < cols) {
-	const pos = [];
-	while (pos.length < 2) pos.push(Math.floor(Math.random() * rows));
-	currentPositions.push(pos);
-}
-
-const textRGB = [128, 255, 0];
-const bgRGB = textRGB.map(c => Math.floor(c * 0.1) || 0);
-const refreshRate = 20;
-const fontFamily = 'Courier New, monospace';
-
-function updateSize() {
-	const rect = canvas.getBoundingClientRect();
-	size = {
-		width: rect.width * dpr,
-		height: rect.height * dpr,
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {Number} rowCount
+ */
+function updateCanvasSize(canvas, rowCount, dpr = 1) {
+	const rect = canvas.getBoundingClientRect(),
+		width = rect.width * dpr,
+		height = rect.height * dpr,
+		cellSize = Math.ceil(height / rowCount);
+	canvas.width = width;
+	canvas.height = height;
+	return {
+		size: { width: width, height: height },
+		cellSize: cellSize,
+		fontSize: Math.round(cellSize * 0.85),
+		colCount: Math.floor(width / (height / rowCount)) + 1,
 	};
-	canvas.width = size.width;
-	canvas.height = size.height;
-	cellSize = Math.ceil(size.height / rows);
-	fontSize = Math.round(cellSize * 0.85);
+}
+/**
+ * @param {Number[]} rgbArr
+ * @param {Number} alpha
+ * @returns {String}
+ */
+function rgbToString(rgbArr, alpha = 1) {
+	const values = rgbArr.join(',');
+	return alpha !== 1 ? `rgba(${values},${alpha})` : `rgb(${values})`;
 }
 
+/**
+ * @param {Number} rowCount
+ * @param {Number} colCount
+ * @param {Number} [colPositions]
+ * @returns {Number[][]}
+ */
+function initRowPositions(rowCount, colCount, colPositions = 2) {
+	const cols = [];
+	while (cols.length < colCount) {
+		const col = [];
+		while (col.length < colPositions) {
+			col.push(Math.floor(Math.random() * rowCount));
+		}
+		cols.push(col);
+	}
+	return cols;
+}
+
+// SETUP - GLOBAL VARIABLES
+const canvas = document.querySelector('canvas'),
+	ctx = canvas.getContext('2d'),
+	dpr = 1,
+	rowCount = 64,
+	refreshRate = 20,
+	textRGB = [128, 255, 0],
+	bgRGB = textRGB.map(c => Math.floor(c * 0.1) || 0),
+	fontFamily = 'Courier New, monospace';
+
+ctx.imageSmoothingEnabled = false;
+
+let isAnimating = true;
+let { size, cellSize, fontSize, colCount } = updateCanvasSize(
+	canvas,
+	rowCount,
+	dpr
+);
+let currentRows = initRowPositions(rowCount, colCount);
+
+ctx.fillStyle = rgbToString(bgRGB);
+ctx.fillRect(0, 0, size.width, size.height);
+
+// ANIMATION LOOP
 function animate() {
 	try {
 		if (!isAnimating) return;
 
-		ctx.fillStyle = `rgba(${bgRGB.join(',')},0.25)`;
+		ctx.fillStyle = rgbToString(bgRGB, 0.25);
 		ctx.fillRect(0, 0, size.width, size.height);
 
-		ctx.fillStyle = `rgba(${textRGB.join(',')}, 0.75)`;
+		ctx.fillStyle = rgbToString(textRGB, 0.75);
 		ctx.font = `bold ${fontSize || 16}px ${fontFamily}`;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 
 		const start = {
-			x: (size.width - cellSize * cols) * 0.5,
-			y: (size.height - cellSize * rows) * 0.5,
+			x: (size.width - cellSize * colCount) * 0.5,
+			y: (size.height - cellSize * rowCount) * 0.5,
 		};
 
-		for (let col = 0; col < cols; col++) {
-			const pos = currentPositions[col];
-
-			pos.forEach((row, i) => {
+		for (let col = 0; col < colCount; col++) {
+			const rows = currentRows[col];
+			rows.forEach((row, i) => {
 				ctx.fillText(
 					randomChar(),
 					start.x + col * cellSize + cellSize * 0.5,
 					start.y + row * cellSize + cellSize * 0.5
 				);
-				pos[i] = row + Math.round(Math.random() * 2);
-				if (pos[i] >= rows) pos[i] = 0;
+				rows[i] = row + Math.round(Math.random() * 2);
+				if (rows[i] >= rowCount) rows[i] = 0;
 			});
 		}
 	} catch (e) {
@@ -87,16 +117,19 @@ function toggleAnimation() {
 	isAnimating && animate();
 }
 
-ctx.fillStyle = `rgb(${bgRGB.join(',')})`;
-ctx.fillRect(0, 0, size.width, size.height);
-
-animate();
-
+// EVENT LISTENERS
 window.addEventListener('keydown', ev => ev.key === ' ' && toggleAnimation());
 canvas.addEventListener('pointerdown', toggleAnimation);
 
 window.addEventListener('resize', () => {
-	updateSize();
-	ctx.fillStyle = `rgba(${bgRGB.join(',')})`;
+	({ size, cellSize, fontSize, colCount } = updateCanvasSize(
+		canvas,
+		rowCount,
+		dpr
+	));
+	currentRows = initRowPositions(rowCount, colCount);
+	ctx.fillStyle = rgbToString(bgRGB);
 	ctx.fillRect(0, 0, size.width, size.height);
 });
+
+animate();
